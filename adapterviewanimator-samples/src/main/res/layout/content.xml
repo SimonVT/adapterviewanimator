@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center">
+
+  <LinearLayout
+      android:layout_height="wrap_content"
+      android:layout_width="match_parent"
+      android:orientation="horizontal">
+
+    <Button
+        android:id="@+id/remove"
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:text="Remove"/>
+
+    <Button
+        android:id="@+id/shuffle"
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:text="Shuffle"/>
+
+    <Button
+        android:id="@+id/add"
+        android:layout_height="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:text="Add"/>
+  </LinearLayout>
+
+  <FrameLayout
+      android:layout_height="0dp"
+      android:layout_width="match_parent"
+      android:layout_weight="1">
+
+    <ListView
+        android:id="@android:id/list"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"/>
+
+    <TextView
+        android:id="@android:id/empty"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:gravity="center"
+        android:text="No items"/>
+  </FrameLayout>
+</LinearLayout>
