@@ -102,7 +102,7 @@ public class AnimatorSample extends Activity {
 
     @Override public View getView(int position, View convertView, ViewGroup parent) {
       View v = convertView;
-      if (v == null || !AdapterViewAnimator.allowRecycling(convertView)) {
+      if (v == null) {
         v = LayoutInflater.from(AnimatorSample.this)
             .inflate(android.R.layout.simple_list_item_1, parent, false);
       }

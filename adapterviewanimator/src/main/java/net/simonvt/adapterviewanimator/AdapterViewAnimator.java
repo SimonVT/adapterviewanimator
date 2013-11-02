@@ -15,6 +15,8 @@
  */
 package net.simonvt.adapterviewanimator;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.util.LongSparseArray;
 import android.view.View;
@@ -23,10 +25,6 @@ import android.view.ViewGroupOverlay;
 import android.view.ViewTreeObserver;
 import android.widget.Adapter;
 import android.widget.AdapterView;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 public final class AdapterViewAnimator {
 
@@ -67,11 +65,9 @@ public final class AdapterViewAnimator {
      * @param view The view that is being removed.
      * @param id The id of the item the view represents.
      * @param startBounds The bounds of the view before the dataset changed.
-     * @param endAction An action that must be executed when the custom animation finishes.
      * @return True if a custom animation has been started, false to use default.
      */
-    boolean onRemoveView(AdapterView parent, View view, long id, Rect startBounds,
-        Runnable endAction);
+    boolean onRemoveView(AdapterView parent, View view, long id, Rect startBounds);
   }
 
   private static final int DURATION_ADD = 350;
@@ -83,8 +79,6 @@ public final class AdapterViewAnimator {
   private LongSparseArray<Rect> viewBounds = new LongSparseArray<Rect>();
 
   private LongSparseArray<View> idToViewMap = new LongSparseArray<View>();
-
-  private static List<WeakReference<View>> transientViews = new ArrayList<WeakReference<View>>();
 
   private boolean animateCalled;
 
@@ -168,9 +162,9 @@ public final class AdapterViewAnimator {
         for (int i = 0; i < size; i++) {
           final long id = idToViewMap.keyAt(i);
           final View child = idToViewMap.get(id);
+          child.setHasTransientState(false);
+          final View viewCopy = new ViewCopy(child);
           Rect bounds = viewBounds.get(id);
-
-          allowRecycling(child, false);
 
           if (overlay == null) {
             ViewGroup parent = (ViewGroup) adapterView.getParent();
@@ -179,26 +173,19 @@ public final class AdapterViewAnimator {
             parent.getLocationOnScreen(hostViewLocation);
           }
 
-          overlay.add(child);
-          child.offsetLeftAndRight(adapterViewLocation[0] - hostViewLocation[0]);
-          child.offsetTopAndBottom(adapterViewLocation[1] - hostViewLocation[1]);
+          overlay.add(viewCopy);
+          viewCopy.offsetLeftAndRight(adapterViewLocation[0] - hostViewLocation[0]);
+          viewCopy.offsetTopAndBottom(adapterViewLocation[1] - hostViewLocation[1]);
 
-          final Runnable endAction = new Runnable() {
-            @Override public void run() {
-              child.setHasTransientState(false);
-              allowRecycling(child, true);
-            }
-          };
-
-          if (callback == null || !callback.onRemoveView(adapterView, child, id, bounds,
-              endAction)) {
-            child.animate().setDuration(DURATION_REMOVE).alpha(0.0f).withEndAction(new Runnable() {
-              @Override public void run() {
-                endAction.run();
-                child.setAlpha(0.0f);
-                overlay.remove(child);
-              }
-            });
+          if (callback == null || !callback.onRemoveView(adapterView, viewCopy, id, bounds)) {
+            viewCopy.animate()
+                .setDuration(DURATION_REMOVE)
+                .alpha(0.0f)
+                .withEndAction(new Runnable() {
+                  @Override public void run() {
+                    overlay.remove(viewCopy);
+                  }
+                });
           }
         }
 
@@ -207,45 +194,32 @@ public final class AdapterViewAnimator {
     });
   }
 
-  private void allowRecycling(View view, boolean allow) {
-    if (allow && allowRecycling(view)) {
-      for (WeakReference<View> ref : transientViews) {
-        View v = ref.get();
-        if (v == null) {
-          transientViews.remove(ref);
-          continue;
-        }
+  public class ViewCopy extends View {
 
-        if (v == view) {
-          transientViews.remove(ref);
-          break;
-        }
-      }
-    } else if (!allow) {
-      transientViews.add(new WeakReference<View>(view));
-    }
-  }
+    private Bitmap viewCopy;
 
-  public static boolean allowRecycling(View convertView) {
-    if (convertView == null) return true;
-
-    boolean allow = true;
-
-    Iterator<WeakReference<View>> iterator = transientViews.iterator();
-    while (iterator.hasNext()) {
-      WeakReference<View> ref = iterator.next();
-      View v = ref.get();
-      if (v == null) {
-        iterator.remove();
-        continue;
-      }
-
-      if (v == convertView) {
-        allow = false;
-        break;
-      }
+    public ViewCopy(View view) {
+      super(view.getContext());
+      copyView(view);
+      measure(MeasureSpec.makeMeasureSpec(view.getWidth(), MeasureSpec.EXACTLY),
+          MeasureSpec.makeMeasureSpec(view.getHeight(), MeasureSpec.EXACTLY));
+      layout(view.getLeft(), view.getTop(), view.getRight(), view.getBottom());
     }
 
-    return allow;
+    private void copyView(View view) {
+      Bitmap b = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+      Canvas c = new Canvas(b);
+      view.draw(c);
+      viewCopy = b;
+    }
+
+    @Override protected void onDraw(Canvas canvas) {
+      canvas.drawBitmap(viewCopy, 0.0f, 0.0f, null);
+    }
+
+    @Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+      setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec),
+          MeasureSpec.getSize(heightMeasureSpec));
+    }
   }
 }
