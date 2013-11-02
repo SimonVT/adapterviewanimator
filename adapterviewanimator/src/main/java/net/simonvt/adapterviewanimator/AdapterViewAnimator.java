@@ -38,35 +38,40 @@ public final class AdapterViewAnimator {
     /**
      * Use to handle animating adding a view.
      *
-     * @param v The view that is being added.
+     * @param parent The AdapterView where the view is being added.
+     * @param view The view that is being added.
      * @param position The position of the item the view represents.
      * @param id The id of the item the view represents.
      * @return True if a custom animation has been started, false to use default.
      */
-    boolean onAddView(View v, int position, long id);
+    boolean onAddView(AdapterView parent, View view, int position, long id);
 
     /**
      * Use to handle animating adding a view.
      *
-     * @param v The view that is being added.
+     * @param parent The AdapterView where the view is being moved.
+     * @param view The view that is being moved.
      * @param position The position of the item the view represents.
      * @param id The id of the item the view represents.
      * @param startBounds The bounds of the view before the dataset changed.
      * @param endAction An action that must be executed when the custom animation finishes.
      * @return True if a custom animation has been started, false to use default.
      */
-    boolean onMoveView(View v, int position, long id, Rect startBounds, Runnable endAction);
+    boolean onMoveView(AdapterView parent, View view, int position, long id, Rect startBounds,
+        Runnable endAction);
 
     /**
      * Use to handle animating adding a view.
      *
-     * @param v The view that is being added.
+     * @param parent The AdapterView where the view is being removed.
+     * @param view The view that is being removed.
      * @param id The id of the item the view represents.
      * @param startBounds The bounds of the view before the dataset changed.
      * @param endAction An action that must be executed when the custom animation finishes.
      * @return True if a custom animation has been started, false to use default.
      */
-    boolean onRemoveView(View v, long id, Rect startBounds, Runnable endAction);
+    boolean onRemoveView(AdapterView parent, View view, long id, Rect startBounds,
+        Runnable endAction);
   }
 
   private static final int DURATION_ADD = 350;
@@ -137,7 +142,8 @@ public final class AdapterViewAnimator {
             }
           };
           if (bounds != null) {
-            if (callback == null || !callback.onMoveView(child, position, id, bounds, endAction)) {
+            if (callback == null || !callback.onMoveView(adapterView, child, position, id, bounds,
+                endAction)) {
               final int dx = bounds.left - child.getLeft();
               final int dy = bounds.top - child.getTop();
               child.setTranslationX(dx);
@@ -149,7 +155,7 @@ public final class AdapterViewAnimator {
                   .withEndAction(endAction);
             }
           } else {
-            if (callback == null || !callback.onAddView(child, position, id)) {
+            if (callback == null || !callback.onAddView(adapterView, child, position, id)) {
               child.setAlpha(0.0f);
               child.animate().setDuration(DURATION_ADD).alpha(1.0f);
             }
@@ -184,7 +190,8 @@ public final class AdapterViewAnimator {
             }
           };
 
-          if (callback == null || !callback.onRemoveView(child, id, bounds, endAction)) {
+          if (callback == null || !callback.onRemoveView(adapterView, child, id, bounds,
+              endAction)) {
             child.animate().setDuration(DURATION_REMOVE).alpha(0.0f).withEndAction(new Runnable() {
               @Override public void run() {
                 endAction.run();
